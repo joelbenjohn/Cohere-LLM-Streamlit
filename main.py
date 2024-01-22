@@ -9,7 +9,7 @@ conn = cohere.Client(st.secrets["cohere"]["api_key"])
 
 st.title('Cohere LLM Streamlit App')
 username = st.text_input("Who's the boss ?")
-if username.lower().replace(" ", "") != st.secrets["user_credential"]["username"]:
+if username.lower().replace(" ", "") not in st.secrets["user_credential"]["username"]:
     st.warning('You guessed wrong!')
     st.stop()
 
