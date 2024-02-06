@@ -1,4 +1,115 @@
 import cohere
+import pandas as pd
+from youtube_transcript_api import YouTubeTranscriptApi
+from googleapiclient.discovery import build
+import time
+import docx
+from docx import Document
+import io
+
+# Initialize YouTube API
+def youtube_service(api_key):
+    return build('youtube', 'v3', developerKey=api_key)
+
+# Search for YouTube videos
+def search_youtube(youtube, query):
+    request = youtube.search().list(part="snippet", maxResults=5, q=query, type="video")
+    response = request.execute()
+    return response.get('items', [])
+
+
+# Function to fetch and process YouTube transcripts, languages=['en']
+def fetch_youtube_transcript(video_id):
+    try:
+        transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en'])
+    except:
+        try:
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en-US'])
+        except:
+            try:
+                transcript_list = YouTubeTranscriptApi.get_transcript(video_id, languages=['en-GB'])
+            except:
+                return "No Transcript Found"
+    if isinstance(transcript_list, str):
+        return "No Transcript Found"
+    df = pd.DataFrame(transcript_list)
+    return df
+
+# Function to summarize a batch of text segments
+def summarize_batch(cohere_client, combined_text, summary_length="short"):
+    # combined_text = ' '.join(text_segments)
+    summary = cohere_client.summarize(text=combined_text, model='command', length=summary_length)
+    return summary
+
+# Function to process transcript data in batches for summarization
+def process_transcript_for_summaries(cohere_client, transcript_df, batch_size=50):
+    rate_limit_pause = 6  # seconds
+    summaries = []
+    # print('Trasncrip_df', transcript_df)
+    for start in range(0, len(transcript_df), batch_size):
+        run_start = time.time()
+        end = start + batch_size
+        batch_segments = transcript_df['text'][start:end].tolist()
+        # print(batch_segments)
+        try:
+            combined_text = ' '.join(batch_segments)
+            summary_text = summarize_batch(cohere_client, combined_text)
+            start_time = transcript_df['start'].iloc[start]
+            summary = {'start': start_time, 'summary': summary_text.summary, 'original':combined_text, 'run_time':time.time()-run_start}
+            # summaries.append(summary)
+            # time.sleep(rate_limit_pause)  # Respect the API rate limit
+            # Instead of printing, yield the summary for real-time update
+            yield summary
+
+        except Exception as e:
+            # 'Failed summarizing : ', batch_segments, 
+            print('Error', e)
+        # print(summary_text.billed_units)
+    # return pd.DataFrame(summaries)
+
+# Main execution function
+def summarize(conn, video_id):
+    # Initialize Cohere client
+    cohere_client = conn
+
+    # Fetch and process YouTube transcript
+    transcript_df = fetch_youtube_transcript(video_id)
+
+    if isinstance(transcript_df, str):
+        return "No trancript Found"
+    # Process the transcript for summaries
+    summary_df = process_transcript_for_summaries(cohere_client, transcript_df)
+
+    # Return or display the summary DataFrame
+    return {'Transcript':transcript_df,
+            'Summary':summary_df}
+
+def create_word_document(video_details, summaries):
+    # Create a new Document
+    doc = Document()
+    
+    # Set the title of the document
+    doc.add_heading(video_details['video_title'], level=0)
+
+    doc.add_paragraph(f"Video Link : {video_details['video_id']}")
+    
+    # Iterate through the summaries dictionary
+    # Assuming 'summaries' is a dictionary with start times as keys and summary text as values
+    for start_time, summary in summaries.items():
+        if start_time == '-1':
+            continue
+
+        # Add a heading for each start time
+        doc.add_heading(f'Start Time: {round(start_time)} s', level=1)
+        # Add the summary text as a new paragraph
+        doc.add_paragraph(summary)
+    
+     # Save the document to a BytesIO object
+    doc_io = io.BytesIO()
+    doc.save(doc_io)
+    doc_io.seek(0)  # Go back to the beginning of the BytesIO object after saving
+    
+    return doc_io
 
 def conversation_query(conn, conversation, query):
     """
