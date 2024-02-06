@@ -36,13 +36,7 @@ def new_run():
     st.session_state.summarized = False
 
 def youtube_summarize(_conn, transcript_df):
-    
-
     # Process and display summaries in real-time
-    # summaries_display = ""
-    
-    # time_selector = st.select_slider('Time, options = ')
-    
     for summary in process_transcript_for_summaries(conn, transcript_df, batch_size=50):
         time_start = summary['start']
         st.session_state.time_select.append(time_start)
@@ -50,30 +44,31 @@ def youtube_summarize(_conn, transcript_df):
         st.session_state.transcript_cache[time_start] = f"- {summary['original']}"
         st.session_state.last_time = time_start
         run_time = summary['run_time']
-        if run_time<7.0:
-            time.sleep(7.0-run_time)
+        # if run_time<7.0:
+        #     time.sleep(7.0-run_time)
         yield time_start
 
 
 # Initialize Cohere client with API key from st.secrets
-conn = cohere.Client(st.secrets["cohere"]["api_key"])
+conn = cohere.Client(st.secrets["cohere"]["production_key"])
 
 st.title('Cohere LLM Streamlit App')
 st.write('This app is an attempt/experiment to understand cohere LLM functionalities')
 st.markdown('''
           #### Generic Apps
          - Q&A : using Cohere 'generate' endpoint
-         - ChatBot : using Cohere 'chat' endpoint (RAG enabled)''')
+         - ChatBot : using Cohere 'chat' endpoint (RAG enabled)
+        ''')
 st.markdown('''
           #### Unique Apps
           ##### Youtube Video Summarizer : 
          - Cohere 'summarize' endpoint to summarize transcripts texts
          - Youtube Data API to search for youtube videos in app by user
-         - Youtube Transcipt API to get transcripts of video selected by user''')
+         - Youtube Transcipt API to get transcripts of video selected by user
+        ''')
 st.markdown(
          '''
-         **Note**: This app utilizes personal api-keys which are **not production api-keys**
-         The username to be entered below at Who's the boss? is provided only to those that the boss shared the app link to..
+         **Note**: This app utilizes Cohere-production API key (spend limit 20$/month) and trial Google Cloud API key.
          ''')
 # st.markdown(body)
 

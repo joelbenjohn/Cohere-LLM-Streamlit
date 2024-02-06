@@ -37,35 +37,27 @@ def fetch_youtube_transcript(video_id):
 
 # Function to summarize a batch of text segments
 def summarize_batch(cohere_client, combined_text, summary_length="short"):
-    # combined_text = ' '.join(text_segments)
-    summary = cohere_client.summarize(text=combined_text, model='command', length=summary_length)
-    return summary
+    return cohere_client.summarize(text=combined_text, model='command', length=summary_length)
 
 # Function to process transcript data in batches for summarization
 def process_transcript_for_summaries(cohere_client, transcript_df, batch_size=50):
-    rate_limit_pause = 6  # seconds
-    summaries = []
-    # print('Trasncrip_df', transcript_df)
+
     for start in range(0, len(transcript_df), batch_size):
         run_start = time.time()
         end = start + batch_size
         batch_segments = transcript_df['text'][start:end].tolist()
-        # print(batch_segments)
+
         try:
             combined_text = ' '.join(batch_segments)
             summary_text = summarize_batch(cohere_client, combined_text)
             start_time = transcript_df['start'].iloc[start]
             summary = {'start': start_time, 'summary': summary_text.summary, 'original':combined_text, 'run_time':time.time()-run_start}
-            # summaries.append(summary)
-            # time.sleep(rate_limit_pause)  # Respect the API rate limit
-            # Instead of printing, yield the summary for real-time update
+
             yield summary
 
         except Exception as e:
-            # 'Failed summarizing : ', batch_segments, 
             print('Error', e)
-        # print(summary_text.billed_units)
-    # return pd.DataFrame(summaries)
+
 
 # Main execution function
 def summarize(conn, video_id):
