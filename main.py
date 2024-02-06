@@ -77,10 +77,10 @@ st.markdown(
          ''')
 # st.markdown(body)
 
-username = st.text_input("Who's the boss ?")
-if username.lower().replace(" ", "") not in st.secrets["user_credential"]["username"] and username!="":
-    st.warning('You guessed wrong!')
-    st.stop()
+# username = st.text_input("Who's the boss ?")
+# if username.lower().replace(" ", "") not in st.secrets["user_credential"]["username"] and username!="":
+#     st.warning('You guessed wrong!')
+#     st.stop()
 
 select_app = st.selectbox('Select Application', options = ['Youtube Summarizer', 'Q&A', 'Minutes', 'Chat'])
 if select_app == 'Youtube Summarizer':
