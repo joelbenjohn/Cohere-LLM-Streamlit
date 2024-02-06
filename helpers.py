@@ -91,7 +91,7 @@ def create_word_document(video_details, summaries):
     # Set the title of the document
     doc.add_heading(video_details['video_title'], level=0)
 
-    doc.add_paragraph(f"Video Link : {video_details['video_id']}")
+    doc.add_paragraph(f"Video Link : https://www.youtube.com/watch?v={video_details['video_id']}")
     
     # Iterate through the summaries dictionary
     # Assuming 'summaries' is a dictionary with start times as keys and summary text as values
